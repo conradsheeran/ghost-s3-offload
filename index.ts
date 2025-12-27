@@ -10,7 +10,7 @@ import {
     ServerSideEncryption
 } from '@aws-sdk/client-s3';
 import BaseStore from 'ghost-storage-base';
-import { join } from 'path';
+import { join, extname } from 'path';
 import { promises as fs } from 'fs';
 import { Request, Response, NextFunction } from 'express';
 import { Readable } from 'stream';
@@ -179,6 +179,41 @@ class S3Offload extends BaseStore {
         } catch (error) {
             throw error;
         }
+    }
+  
+    /**
+       * Ghost 专门用于保存缩略图的方法
+       * @param buffer 图片的二进制数据
+       * @param fullPath Ghost 生成的完整路径（包含 size/w300/ 等）
+       */
+    public async saveRaw(buffer: Buffer, fullPath: string): Promise<string> {
+      const key = stripLeadingSlash(fullPath);
+
+      // 简单的 MIME 类型判断
+      const ext = extname(fullPath).toLowerCase();
+      let contentType = 'image/jpeg';
+      if (ext === '.webp') contentType = 'image/webp';
+      else if (ext === '.png') contentType = 'image/png';
+      else if (ext === '.gif') contentType = 'image/gif';
+      else if (ext === '.svg') contentType = 'image/svg+xml';
+
+      const command = new PutObjectCommand({
+        ACL: this.acl as ObjectCannedACL,
+        Body: buffer,
+        Bucket: this.bucket,
+        CacheControl: `max-age=${30 * 24 * 60 * 60}`,
+        ContentType: contentType,
+        Key: key,
+        ServerSideEncryption: this.serverSideEncryption as ServerSideEncryption
+      });
+
+      try {
+        await this._s3.send(command);
+        return `${this.host}/${key}`;
+      } catch (error) {
+        console.error(`[S3 Adapter] Failed to saveRaw: ${key}`, error);
+        throw error;
+      }
     }
 
     /**
