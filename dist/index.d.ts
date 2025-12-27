@@ -50,6 +50,12 @@ declare class S3Offload extends BaseStore {
      */
     save(image: GhostImage, targetDir?: string): Promise<string>;
     /**
+       * Ghost 专门用于保存缩略图的方法
+       * @param buffer 图片的二进制数据
+       * @param fullPath Ghost 生成的完整路径（包含 size/w300/ 等）
+       */
+    saveRaw(buffer: Buffer, fullPath: string): Promise<string>;
+    /**
      * 实现一个 Express 中间件，用于直接从 S3 提供文件服务
      */
     serve(): (req: Request, res: Response, next: NextFunction) => Promise<void>;

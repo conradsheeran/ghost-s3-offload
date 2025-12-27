@@ -1,6 +1,6 @@
 {
     "name": "ghost-s3-offload",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "description": "An S3 storage adapter for Ghost CMS, written in TypeScript with AWS SDK v3.",
     "main": "dist/index.js",
     "types": "dist/index.d.ts",

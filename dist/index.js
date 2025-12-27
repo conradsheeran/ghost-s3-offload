@@ -114,6 +114,42 @@ class S3Offload extends ghost_storage_base_1.default {
         }
     }
     /**
+       * Ghost 专门用于保存缩略图的方法
+       * @param buffer 图片的二进制数据
+       * @param fullPath Ghost 生成的完整路径（包含 size/w300/ 等）
+       */
+    async saveRaw(buffer, fullPath) {
+        const key = stripLeadingSlash(fullPath);
+        // 简单的 MIME 类型判断
+        const ext = (0, path_1.extname)(fullPath).toLowerCase();
+        let contentType = 'image/jpeg';
+        if (ext === '.webp')
+            contentType = 'image/webp';
+        else if (ext === '.png')
+            contentType = 'image/png';
+        else if (ext === '.gif')
+            contentType = 'image/gif';
+        else if (ext === '.svg')
+            contentType = 'image/svg+xml';
+        const command = new client_s3_1.PutObjectCommand({
+            ACL: this.acl,
+            Body: buffer,
+            Bucket: this.bucket,
+            CacheControl: `max-age=${30 * 24 * 60 * 60}`,
+            ContentType: contentType,
+            Key: key,
+            ServerSideEncryption: this.serverSideEncryption
+        });
+        try {
+            await this._s3.send(command);
+            return `${this.host}/${key}`;
+        }
+        catch (error) {
+            console.error(`[S3 Adapter] Failed to saveRaw: ${key}`, error);
+            throw error;
+        }
+    }
+    /**
      * 实现一个 Express 中间件，用于直接从 S3 提供文件服务
      */
     serve() {
